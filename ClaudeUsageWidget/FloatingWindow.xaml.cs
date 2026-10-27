@@ -149,6 +149,40 @@ public partial class FloatingWindow : Window
         foreach (var s in _sections) s.RefreshCountdowns();
     }
 
+    // Staying on top of the taskbar
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    private const int GWL_EXSTYLE = -20;
+    private const int WS_EX_NOACTIVATE = 0x08000000;
+    private const int WS_EX_TOOLWINDOW = 0x00000080;
+    private const int WmMouseActivate = 0x0021;
+    private const int MaNoActivate = 3;
+
+    private TopMostEnforcer? _topMostEnforcer;
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        // Clicking the bar must not activate it: activation makes the taskbar repaint and
+        // re-raise itself, which shows up as flicker when the bar sits on top of the taskbar.
+        SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
+        System.Windows.Interop.HwndSource.FromHwnd(hwnd).AddHook((IntPtr _, int msg, IntPtr _, IntPtr _, ref bool handled) =>
+        {
+            if (msg != WmMouseActivate) return IntPtr.Zero;
+            handled = true;
+            return new IntPtr(MaNoActivate);
+        });
+        // Re-assert topmost whenever the foreground window changes (the taskbar included).
+        _topMostEnforcer = new TopMostEnforcer(hwnd);
+        Closed += (_, _) => _topMostEnforcer?.Dispose();
+    }
+
     // Card vs. thin bar
 
     private bool IsCompact => SettingsStore.Instance.CompactMode;
