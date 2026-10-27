@@ -80,12 +80,12 @@ public partial class FloatingWindow : Window
             {
                 CompactPanel.Children.Add(new Rectangle
                 {
-                    Width = 1, Height = 16, Margin = new Thickness(10, 0, 10, 0),
+                    Width = 1, Height = 20, Margin = new Thickness(13, 0, 13, 0),
                     Fill = new SolidColorBrush(Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF))
                 });
                 ServicesPanel.Children.Add(new Rectangle
                 {
-                    Height = 1, Margin = new Thickness(0, 10, 0, 10),
+                    Height = 1, Margin = new Thickness(0, 8, 0, 8),
                     Fill = new SolidColorBrush(Color.FromArgb(0x1A, 0xFF, 0xFF, 0xFF))
                 });
             }
@@ -173,8 +173,9 @@ public partial class FloatingWindow : Window
     private void OpenDetail()
     {
         _popupCloseTimer.Stop();
-        if (IsCompact && Mouse.LeftButton != MouseButtonState.Pressed)
-            DetailPopup.IsOpen = true;
+        if (!IsCompact || Mouse.LeftButton == MouseButtonState.Pressed) return;
+        DetailPopup.HorizontalOffset = (ThinBar.ActualWidth - Card.Width) / 2 - Card.Margin.Left;
+        DetailPopup.IsOpen = true;
     }
 
     // Moving the window
@@ -353,14 +354,14 @@ public partial class FloatingWindow : Window
             header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             // Vector badge instead of the 20px PNG logos, so it stays crisp at any display scale.
-            var icon = MakeBadge(isClaude, _accent, 20);
-            icon.Margin = new Thickness(0, 0, 8, 0);
+            var icon = MakeBadge(isClaude, _accent, 18);
+            icon.Margin = new Thickness(0, 0, 7, 0);
             header.Children.Add(icon);
 
             var name = new TextBlock
             {
                 Text = isClaude ? "Claude" : "Codex",
-                FontSize = 14.5, FontWeight = FontWeights.SemiBold,
+                FontSize = 13.5, FontWeight = FontWeights.SemiBold,
                 Foreground = new SolidColorBrush(_accent.Light),
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -369,7 +370,7 @@ public partial class FloatingWindow : Window
 
             _tokensText = new TextBlock
             {
-                FontSize = 11, Foreground = MutedText,
+                FontSize = 10.5, Foreground = MutedText,
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = "Tokens contados en los registros locales de " +
                           (isClaude ? "Claude Code" : "Codex CLI") +
@@ -388,20 +389,20 @@ public partial class FloatingWindow : Window
             Root.Children.Add(_barsPanel);
             Root.Children.Add(_errorText);
 
-            var compactIcon = MakeBadge(isClaude, _accent, 16);
-            compactIcon.Margin = new Thickness(0, 0, 7, 0);
+            var compactIcon = MakeBadge(isClaude, _accent, 20);
+            compactIcon.Margin = new Thickness(0, 0, 9, 0);
             compactIcon.VerticalAlignment = VerticalAlignment.Center;
             CompactRoot.Children.Add(compactIcon);
             _miniSession = new MiniBar(_accent);
             _miniWeek = new MiniBar(_accent) { };
             var minis = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            _miniWeek.Root.Margin = new Thickness(0, 3, 0, 0);
+            _miniWeek.Root.Margin = new Thickness(0, 4, 0, 0);
             minis.Children.Add(_miniSession.Root);
             minis.Children.Add(_miniWeek.Root);
             CompactRoot.Children.Add(minis);
             _compactText = new TextBlock
             {
-                FontSize = 11.5, Margin = new Thickness(7, 0, 0, 0),
+                FontSize = 13, Margin = new Thickness(9, 0, 0, 0),
                 VerticalAlignment = VerticalAlignment.Center, Text = "…", Foreground = MutedText
             };
             CompactRoot.Children.Add(_compactText);
@@ -513,16 +514,16 @@ public partial class FloatingWindow : Window
     /// <summary>4px line used in the thin-bar mode.</summary>
     private sealed class MiniBar
     {
-        private const double TrackWidth = 72;
-        public Grid Root { get; } = new() { Width = TrackWidth, Height = 4 };
+        private const double TrackWidth = 86;
+        public Grid Root { get; } = new() { Width = TrackWidth, Height = 5 };
         private readonly Border _fill;
         private readonly (Color Light, Color Dark) _accent;
 
         public MiniBar((Color Light, Color Dark) accent)
         {
             _accent = accent;
-            Root.Children.Add(new Border { CornerRadius = new CornerRadius(2), Background = TrackBrush });
-            _fill = new Border { CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
+            Root.Children.Add(new Border { CornerRadius = new CornerRadius(2.5), Background = TrackBrush });
+            _fill = new Border { CornerRadius = new CornerRadius(2.5), HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
             Root.Children.Add(_fill);
         }
 
@@ -531,7 +532,7 @@ public partial class FloatingWindow : Window
             var (light, dark) = LevelColors(utilization, _accent);
             _fill.Background = new LinearGradientBrush(dark, light, 0);
             double fraction = Math.Clamp(utilization / 100.0, 0, 1);
-            double target = fraction > 0 ? Math.Max(4, TrackWidth * fraction) : 0;
+            double target = fraction > 0 ? Math.Max(5, TrackWidth * fraction) : 0;
             _fill.BeginAnimation(FrameworkElement.WidthProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(700))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
@@ -557,16 +558,16 @@ public partial class FloatingWindow : Window
             Root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            var title = new TextBlock { Text = DisplayName(label), FontSize = 11.5, Foreground = MutedText };
+            var title = new TextBlock { Text = DisplayName(label), FontSize = 11, Foreground = MutedText };
             _value = new TextBlock
             {
-                Text = "…", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = MainText,
+                Text = "…", FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = MainText,
                 HorizontalAlignment = HorizontalAlignment.Right
             };
             Root.Children.Add(title);
             Root.Children.Add(_value);
 
-            _track = new Grid { Height = 8, Margin = new Thickness(0, 3, 0, 0) };
+            _track = new Grid { Height = 7, Margin = new Thickness(0, 3, 0, 0) };
             _track.Children.Add(new Border { CornerRadius = new CornerRadius(4), Background = TrackBrush });
             _glow = new DropShadowEffect { BlurRadius = 10, ShadowDepth = 0, Opacity = 0.7, Color = accent.Dark };
             _fill = new Border
