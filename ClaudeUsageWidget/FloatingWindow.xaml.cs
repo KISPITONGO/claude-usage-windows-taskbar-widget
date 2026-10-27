@@ -5,7 +5,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
-using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
@@ -282,20 +281,27 @@ public partial class FloatingWindow : Window
             header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            var icon = new Image
+            // Vector badge instead of the 20px PNG logos, so it stays crisp at any display scale.
+            var icon = new Border
             {
-                Width = 18, Height = 18, Margin = new Thickness(0, 0, 7, 0),
-                Source = new BitmapImage(new Uri(isClaude
-                    ? "pack://application:,,,/Assets/claude-logo.png"
-                    : "pack://application:,,,/Assets/codex-logo.png"))
+                Width = 20, Height = 20, CornerRadius = new CornerRadius(5),
+                Margin = new Thickness(0, 0, 8, 0),
+                Background = new LinearGradientBrush(_accent.Light, _accent.Dark, 45),
+                Child = new TextBlock
+                {
+                    Text = isClaude ? "C" : "X",
+                    FontSize = 12.5, FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.White,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
             };
-            RenderOptions.SetBitmapScalingMode(icon, BitmapScalingMode.HighQuality);
             header.Children.Add(icon);
 
             var name = new TextBlock
             {
                 Text = isClaude ? "Claude" : "Codex",
-                FontSize = 13.5, FontWeight = FontWeights.SemiBold,
+                FontSize = 14.5, FontWeight = FontWeights.SemiBold,
                 Foreground = new SolidColorBrush(_accent.Light),
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -304,7 +310,7 @@ public partial class FloatingWindow : Window
 
             _tokensText = new TextBlock
             {
-                FontSize = 10, Foreground = MutedText,
+                FontSize = 11, Foreground = MutedText,
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = "Tokens contados en los registros locales de " +
                           (isClaude ? "Claude Code" : "Codex CLI") +
@@ -315,7 +321,7 @@ public partial class FloatingWindow : Window
 
             _errorText = new TextBlock
             {
-                FontSize = 10, Foreground = ErrorText, TextWrapping = TextWrapping.Wrap,
+                FontSize = 11, Foreground = ErrorText, TextWrapping = TextWrapping.Wrap,
                 Visibility = Visibility.Collapsed
             };
 
@@ -403,10 +409,10 @@ public partial class FloatingWindow : Window
             Root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            var title = new TextBlock { Text = DisplayName(label), FontSize = 10.5, Foreground = MutedText };
+            var title = new TextBlock { Text = DisplayName(label), FontSize = 11.5, Foreground = MutedText };
             _value = new TextBlock
             {
-                Text = "…", FontSize = 10.5, Foreground = MainText,
+                Text = "…", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = MainText,
                 HorizontalAlignment = HorizontalAlignment.Right
             };
             Root.Children.Add(title);
