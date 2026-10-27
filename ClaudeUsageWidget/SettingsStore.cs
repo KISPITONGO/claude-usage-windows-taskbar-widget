@@ -26,6 +26,11 @@ internal sealed class SettingsStore
     public double TogglWidth { get; set; } = DefaultTileWidth;
     public double JiraWidth { get; set; } = DefaultTileWidth;
 
+    // Floating desktop bars (default) vs. the original taskbar-docked strip
+    public bool FloatingMode { get; set; } = true;
+    public double FloatLeft { get; set; } = double.NaN;
+    public double FloatTop { get; set; } = double.NaN;
+
     public static event Action? VisibilityChanged;
     public static void RaiseVisibilityChanged() => VisibilityChanged?.Invoke();
 
@@ -110,6 +115,9 @@ internal sealed class SettingsStore
             CodexWidth = ParseWidth(key.GetValue("CodexWidth"), DefaultTileWidth);
             TogglWidth = ParseWidth(key.GetValue("TogglWidth"), DefaultTileWidth);
             JiraWidth = ParseWidth(key.GetValue("JiraWidth"), DefaultTileWidth);
+            FloatingMode = (int)(key.GetValue("FloatingMode", 1) ?? 1) != 0;
+            FloatLeft = ParseCoord(key.GetValue("FloatLeft"));
+            FloatTop = ParseCoord(key.GetValue("FloatTop"));
             TogglApiKey = key.GetValue("TogglApiKey") as string ?? "";
             var targetRaw = key.GetValue("TogglMonthlyTargetCzk") as string;
             if (!string.IsNullOrEmpty(targetRaw) &&
@@ -192,6 +200,9 @@ internal sealed class SettingsStore
             key.SetValue("CodexWidth", CodexWidth.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
             key.SetValue("TogglWidth", TogglWidth.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
             key.SetValue("JiraWidth", JiraWidth.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
+            key.SetValue("FloatingMode", FloatingMode ? 1 : 0, RegistryValueKind.DWord);
+            key.SetValue("FloatLeft", FloatLeft.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
+            key.SetValue("FloatTop", FloatTop.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
             key.SetValue("TogglApiKey", TogglApiKey, RegistryValueKind.String);
             key.SetValue("TogglMonthlyTargetCzk",
                 TogglMonthlyTargetCzk.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -245,6 +256,10 @@ internal sealed class SettingsStore
             return w;
         return fallback;
     }
+
+    private static double ParseCoord(object? raw) =>
+        raw is string s && double.TryParse(s, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : double.NaN;
 
     public IReadOnlyList<(string Label, string Display)> GetKnownLabels()
     {

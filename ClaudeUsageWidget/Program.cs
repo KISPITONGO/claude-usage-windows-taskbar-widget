@@ -104,6 +104,12 @@ internal class App : Application
             togglClient?.Dispose();
         };
 
+        if (SettingsStore.Instance.FloatingMode)
+        {
+            StartFloating(clients);
+            return;
+        }
+
         var primaryHwnd = FindWindow("Shell_TrayWnd", null);
 
         // Okno UKÁZAT IHNED — bez Claude účtů. Credential loading volá wsl.exe (1-5s cold start),
@@ -156,6 +162,36 @@ internal class App : Application
                 _ = primaryWindow.AddAccountsAsync(clients);
                 foreach (var sw in secondaryWindows)
                     _ = sw.AddAccountsAsync(clients);
+            });
+        });
+    }
+
+    private void StartFloating(List<ClaudeApiClient> clients)
+    {
+        var window = new FloatingWindow();
+        MainWindow = window;
+        window.Show();
+
+        _ = Task.Run(async () =>
+        {
+            List<AccountInfo> accounts;
+            try
+            {
+                accounts = CredentialStore.LoadAllAccounts();
+                WriteCrashLog($"LoadAllAccounts: {accounts.Count} accounts ({string.Join(", ", accounts.Select(a => $"{a.Service}/{a.Label}"))})");
+            }
+            catch (Exception ex)
+            {
+                WriteCrashLog("LoadAllAccounts FAILED: " + ex);
+                accounts = [];
+            }
+            if (accounts.Count == 0)
+                accounts.Add(new AccountInfo(ServiceType.Claude, new OAuthCredential(), "no-credentials"));
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                clients.AddRange(accounts.Select(a => new ClaudeApiClient(a)));
+                _ = window.SetAccountsAsync(clients);
             });
         });
     }
