@@ -28,6 +28,7 @@ internal sealed class SettingsStore
 
     // Floating desktop bars (default) vs. the original taskbar-docked strip
     public bool FloatingMode { get; set; } = true;
+    public bool CompactMode { get; set; } = true;
     public double FloatLeft { get; set; } = double.NaN;
     public double FloatTop { get; set; } = double.NaN;
 
@@ -116,6 +117,7 @@ internal sealed class SettingsStore
             TogglWidth = ParseWidth(key.GetValue("TogglWidth"), DefaultTileWidth);
             JiraWidth = ParseWidth(key.GetValue("JiraWidth"), DefaultTileWidth);
             FloatingMode = (int)(key.GetValue("FloatingMode", 1) ?? 1) != 0;
+            CompactMode = (int)(key.GetValue("CompactMode", 1) ?? 1) != 0;
             FloatLeft = ParseCoord(key.GetValue("FloatLeft"));
             FloatTop = ParseCoord(key.GetValue("FloatTop"));
             TogglApiKey = key.GetValue("TogglApiKey") as string ?? "";
@@ -201,6 +203,7 @@ internal sealed class SettingsStore
             key.SetValue("TogglWidth", TogglWidth.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
             key.SetValue("JiraWidth", JiraWidth.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
             key.SetValue("FloatingMode", FloatingMode ? 1 : 0, RegistryValueKind.DWord);
+            key.SetValue("CompactMode", CompactMode ? 1 : 0, RegistryValueKind.DWord);
             key.SetValue("FloatLeft", FloatLeft.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
             key.SetValue("FloatTop", FloatTop.ToString(System.Globalization.CultureInfo.InvariantCulture), RegistryValueKind.String);
             key.SetValue("TogglApiKey", TogglApiKey, RegistryValueKind.String);

@@ -15,55 +15,71 @@
         TextOptions.TextHintingMode="Fixed"
         FontFamily="Segoe UI Variable Text, Segoe UI"
         Title="Token Bars">
-  <!-- Margen transparente para que la sombra no se recorte -->
-  <Grid Margin="14" Width="280">
+  <Window.Resources>
+    <LinearGradientBrush x:Key="RimBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#D97757" Offset="0"/>
+      <GradientStop Color="#7C5CFF" Offset="0.5"/>
+      <GradientStop Color="#10A37F" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="FaceBrush" StartPoint="0,0" EndPoint="0,1">
+      <GradientStop Color="#1C1B25" Offset="0"/>
+      <GradientStop Color="#111117" Offset="1"/>
+    </LinearGradientBrush>
     <!-- La sombra va en una capa aparte: un Effect sobre el contenedor convertiría
          todo el contenido (texto incluido) en un bitmap y se vería borroso. -->
-    <Border CornerRadius="16" Background="#101016">
-      <Border.Effect>
-        <DropShadowEffect BlurRadius="22" ShadowDepth="4" Opacity="0.55" Color="#000000"/>
-      </Border.Effect>
-    </Border>
+    <DropShadowEffect x:Key="Shadow" BlurRadius="22" ShadowDepth="4" Opacity="0.55" Color="#000000"/>
+  </Window.Resources>
 
-    <Border CornerRadius="16" BorderThickness="1.5">
-      <Border.BorderBrush>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-          <GradientStop Color="#D97757" Offset="0"/>
-          <GradientStop Color="#7C5CFF" Offset="0.5"/>
-          <GradientStop Color="#10A37F" Offset="1"/>
-        </LinearGradientBrush>
-      </Border.BorderBrush>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-          <GradientStop Color="#1C1B25" Offset="0"/>
-          <GradientStop Color="#111117" Offset="1"/>
-        </LinearGradientBrush>
-      </Border.Background>
+  <Grid x:Name="RootGrid">
+    <!-- Modo barra fina -->
+    <Grid x:Name="ThinBar" Margin="12" Visibility="Collapsed" Background="Transparent">
+      <Border CornerRadius="13" Background="#101016" Effect="{StaticResource Shadow}"/>
+      <Border CornerRadius="13" BorderThickness="1.2" BorderBrush="{StaticResource RimBrush}"
+              Background="{StaticResource FaceBrush}" Padding="10,5,10,5">
+        <StackPanel Orientation="Horizontal">
+          <StackPanel x:Name="CompactPanel" Orientation="Horizontal" VerticalAlignment="Center"/>
+          <Ellipse x:Name="BarStatusDot" Width="6" Height="6" Margin="8,0,0,0"
+                   Fill="#6E6E85" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Border>
+    </Grid>
 
-      <StackPanel Margin="15,12,15,11">
-        <Grid Margin="0,0,0,9">
-          <TextBlock Text="TOKEN BARS" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center">
-            <TextBlock.Foreground>
-              <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                <GradientStop Color="#F4A27E" Offset="0"/>
-                <GradientStop Color="#A08CFF" Offset="0.55"/>
-                <GradientStop Color="#4FE3A8" Offset="1"/>
-              </LinearGradientBrush>
-            </TextBlock.Foreground>
-          </TextBlock>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-            <TextBlock x:Name="UpdatedText" FontSize="10.5" Foreground="#8080A0"
-                       VerticalAlignment="Center" Margin="0,0,6,0"/>
-            <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="#6E6E85" VerticalAlignment="Center"/>
-          </StackPanel>
-        </Grid>
+    <!-- Tarjeta completa (en modo barra se muestra en el popup al pasar el mouse) -->
+    <Grid x:Name="Card" Margin="14" Width="280" Background="Transparent">
+      <Border CornerRadius="16" Background="#101016" Effect="{StaticResource Shadow}"/>
+      <Border CornerRadius="16" BorderThickness="1.5" BorderBrush="{StaticResource RimBrush}"
+              Background="{StaticResource FaceBrush}">
+        <StackPanel Margin="15,12,15,11">
+          <Grid Margin="0,0,0,9">
+            <TextBlock Text="TOKEN BARS" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center">
+              <TextBlock.Foreground>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                  <GradientStop Color="#F4A27E" Offset="0"/>
+                  <GradientStop Color="#A08CFF" Offset="0.55"/>
+                  <GradientStop Color="#4FE3A8" Offset="1"/>
+                </LinearGradientBrush>
+              </TextBlock.Foreground>
+            </TextBlock>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <TextBlock x:Name="UpdatedText" FontSize="10.5" Foreground="#8080A0"
+                         VerticalAlignment="Center" Margin="0,0,6,0"/>
+              <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="#6E6E85" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Grid>
 
-        <StackPanel x:Name="ServicesPanel"/>
+          <StackPanel x:Name="ServicesPanel"/>
 
-        <TextBlock x:Name="HintText" Margin="0,9,0,0" FontSize="10" Foreground="#6A6A82"
-                   HorizontalAlignment="Center"
-                   Text="Arrastra para mover · doble clic actualiza · clic derecho: menú"/>
-      </StackPanel>
-    </Border>
+          <TextBlock x:Name="HintText" Margin="0,9,0,0" FontSize="10" Foreground="#6A6A82"
+                     HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"
+                     Text="Arrastra · doble clic: actualizar · clic der.: menú"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Popup x:Name="DetailPopup" PlacementTarget="{Binding ElementName=ThinBar}" Placement="Bottom"
+           AllowsTransparency="True" StaysOpen="True" PopupAnimation="Fade"
+           HorizontalOffset="-14" VerticalOffset="-10">
+      <Border x:Name="PopupHost" Background="Transparent"/>
+    </Popup>
   </Grid>
 </Window>

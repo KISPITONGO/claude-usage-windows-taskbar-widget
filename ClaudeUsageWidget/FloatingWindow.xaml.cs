@@ -31,14 +31,29 @@ public partial class FloatingWindow : Window
     private TokenTotals? _claudeTokens;
     private TokenTotals? _codexTokens;
     private bool _refreshing;
+    private readonly DispatcherTimer _popupCloseTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
 
     internal FloatingWindow()
     {
         InitializeComponent();
         UpdatedText.Text = "cargando…";
 
-        MouseLeftButtonDown += OnMouseLeftButtonDown;
-        MouseRightButtonUp += (_, _) => ShowMenu();
+        ThinBar.MouseLeftButtonDown += OnMouseLeftButtonDown;
+        Card.MouseLeftButtonDown += OnMouseLeftButtonDown;
+        ThinBar.MouseRightButtonUp += (_, _) => ShowMenu();
+        Card.MouseRightButtonUp += (_, _) => ShowMenu();
+
+        // Compact mode: hovering the bar pops the full card out next to it.
+        ThinBar.MouseEnter += (_, _) => OpenDetail();
+        ThinBar.MouseLeave += (_, _) => _popupCloseTimer.Start();
+        PopupHost.MouseLeave += (_, _) => _popupCloseTimer.Start();
+        _popupCloseTimer.Tick += (_, _) =>
+        {
+            _popupCloseTimer.Stop();
+            if (!ThinBar.IsMouseOver && !PopupHost.IsMouseOver) DetailPopup.IsOpen = false;
+        };
+
+        ApplyMode();
         Loaded += (_, _) => RestorePosition();
 
         _refreshTimer.Tick += async (_, _) => await RefreshAsync();
@@ -49,6 +64,7 @@ public partial class FloatingWindow : Window
     internal async Task SetAccountsAsync(List<ClaudeApiClient> clients)
     {
         ServicesPanel.Children.Clear();
+        CompactPanel.Children.Clear();
         _sections.Clear();
 
         // Claude first, then Codex; tokens are shown on the first section of each service.
@@ -61,12 +77,20 @@ public partial class FloatingWindow : Window
         {
             var section = new Section(client, showTokens: seenServices.Add(client.AccountService));
             if (_sections.Count > 0)
+            {
+                CompactPanel.Children.Add(new Rectangle
+                {
+                    Width = 1, Height = 16, Margin = new Thickness(10, 0, 10, 0),
+                    Fill = new SolidColorBrush(Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF))
+                });
                 ServicesPanel.Children.Add(new Rectangle
                 {
                     Height = 1, Margin = new Thickness(0, 10, 0, 10),
                     Fill = new SolidColorBrush(Color.FromArgb(0x1A, 0xFF, 0xFF, 0xFF))
                 });
+            }
             ServicesPanel.Children.Add(section.Root);
+            CompactPanel.Children.Add(section.CompactRoot);
             _sections.Add(section);
         }
 
@@ -78,7 +102,7 @@ public partial class FloatingWindow : Window
     {
         if (_refreshing) return;
         _refreshing = true;
-        StatusDot.Fill = new SolidColorBrush(Color.FromRgb(0xFF, 0xC8, 0x57));
+        StatusDot.Fill = BarStatusDot.Fill = new SolidColorBrush(Color.FromRgb(0xFF, 0xC8, 0x57));
         try
         {
             if (force || DateTimeOffset.Now - _lastTokenScan > TimeSpan.FromMinutes(2))
@@ -112,7 +136,7 @@ public partial class FloatingWindow : Window
             }
 
             UpdatedText.Text = $"act. {DateTime.Now:HH:mm}";
-            StatusDot.Fill = new SolidColorBrush(anyError ? Color.FromRgb(0xFF, 0x5E, 0x7E) : Color.FromRgb(0x3D, 0xDC, 0x97));
+            StatusDot.Fill = BarStatusDot.Fill = new SolidColorBrush(anyError ? Color.FromRgb(0xFF, 0x5E, 0x7E) : Color.FromRgb(0x3D, 0xDC, 0x97));
         }
         finally
         {
@@ -125,15 +149,47 @@ public partial class FloatingWindow : Window
         foreach (var s in _sections) s.RefreshCountdowns();
     }
 
-    // Moving the card
+    // Card vs. thin bar
+
+    private bool IsCompact => SettingsStore.Instance.CompactMode;
+
+    private void ApplyMode()
+    {
+        DetailPopup.IsOpen = false;
+        if (IsCompact)
+        {
+            RootGrid.Children.Remove(Card);
+            PopupHost.Child = Card;
+            ThinBar.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            PopupHost.Child = null;
+            if (!RootGrid.Children.Contains(Card)) RootGrid.Children.Insert(1, Card);
+            ThinBar.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void OpenDetail()
+    {
+        _popupCloseTimer.Stop();
+        if (IsCompact && Mouse.LeftButton != MouseButtonState.Pressed)
+            DetailPopup.IsOpen = true;
+    }
+
+    // Moving the window
 
     private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        e.Handled = true;
         if (e.ClickCount == 2)
         {
             _ = RefreshAsync(force: true);
             return;
         }
+        // The card inside the popup is not part of this window and cannot drag it.
+        if (IsCompact && sender == Card) return;
+        DetailPopup.IsOpen = false;
         try { DragMove(); } catch (InvalidOperationException) { return; }
         SavePosition();
     }
@@ -196,6 +252,16 @@ public partial class FloatingWindow : Window
         };
         menu.Items.Add(notify);
 
+        var mode = new MenuItem { Header = IsCompact ? "Ver como tarjeta" : "Ver como barra fina" };
+        mode.Click += (_, _) =>
+        {
+            SettingsStore.Instance.CompactMode = !IsCompact;
+            SettingsStore.Instance.Save();
+            ApplyMode();
+        };
+        menu.Items.Insert(0, mode);
+        menu.Items.Insert(1, new Separator());
+
         var reset = new MenuItem { Header = "Volver a la esquina" };
         reset.Click += (_, _) =>
         {
@@ -221,7 +287,8 @@ public partial class FloatingWindow : Window
         quit.Click += (_, _) => Application.Current.Shutdown();
         menu.Items.Add(quit);
 
-        menu.PlacementTarget = this;
+        DetailPopup.IsOpen = false;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
         menu.IsOpen = true;
     }
 
@@ -259,6 +326,7 @@ public partial class FloatingWindow : Window
     {
         public ClaudeApiClient Client { get; }
         public StackPanel Root { get; } = new();
+        public StackPanel CompactRoot { get; } = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
 
         private readonly bool _showTokens;
         private readonly TextBlock _tokensText;
@@ -266,6 +334,9 @@ public partial class FloatingWindow : Window
         private readonly StackPanel _barsPanel = new();
         private readonly Dictionary<string, Bar> _bars = [];
         private readonly (Color Light, Color Dark) _accent;
+        private readonly MiniBar _miniSession;
+        private readonly MiniBar _miniWeek;
+        private readonly TextBlock _compactText;
 
         public Section(ClaudeApiClient client, bool showTokens)
         {
@@ -282,20 +353,8 @@ public partial class FloatingWindow : Window
             header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             // Vector badge instead of the 20px PNG logos, so it stays crisp at any display scale.
-            var icon = new Border
-            {
-                Width = 20, Height = 20, CornerRadius = new CornerRadius(5),
-                Margin = new Thickness(0, 0, 8, 0),
-                Background = new LinearGradientBrush(_accent.Light, _accent.Dark, 45),
-                Child = new TextBlock
-                {
-                    Text = isClaude ? "C" : "X",
-                    FontSize = 12.5, FontWeight = FontWeights.Bold,
-                    Foreground = Brushes.White,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                }
-            };
+            var icon = MakeBadge(isClaude, _accent, 20);
+            icon.Margin = new Thickness(0, 0, 8, 0);
             header.Children.Add(icon);
 
             var name = new TextBlock
@@ -329,6 +388,24 @@ public partial class FloatingWindow : Window
             Root.Children.Add(_barsPanel);
             Root.Children.Add(_errorText);
 
+            var compactIcon = MakeBadge(isClaude, _accent, 16);
+            compactIcon.Margin = new Thickness(0, 0, 7, 0);
+            compactIcon.VerticalAlignment = VerticalAlignment.Center;
+            CompactRoot.Children.Add(compactIcon);
+            _miniSession = new MiniBar(_accent);
+            _miniWeek = new MiniBar(_accent) { };
+            var minis = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            _miniWeek.Root.Margin = new Thickness(0, 3, 0, 0);
+            minis.Children.Add(_miniSession.Root);
+            minis.Children.Add(_miniWeek.Root);
+            CompactRoot.Children.Add(minis);
+            _compactText = new TextBlock
+            {
+                FontSize = 11.5, Margin = new Thickness(7, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center, Text = "…", Foreground = MutedText
+            };
+            CompactRoot.Children.Add(_compactText);
+
             // Placeholders until the first response arrives.
             GetBar("x-5h");
             GetBar("x-7d");
@@ -360,6 +437,26 @@ public partial class FloatingWindow : Window
             }
             foreach (var limit in limits)
                 GetBar(limit.Label).Set(limit);
+
+            // Thin bar: shortest window on top, longest below (5 h / week).
+            var byWindow = limits.OrderBy(l => WindowSeconds(l.Label)).ToList();
+            var first = byWindow.ElementAtOrDefault(0);
+            var second = byWindow.ElementAtOrDefault(1);
+            _miniSession.Set(first?.Utilization ?? 0);
+            _miniWeek.Set(second?.Utilization ?? 0);
+            _compactText.Inlines.Clear();
+            _compactText.Inlines.Add(new System.Windows.Documents.Run($"{first?.Utilization ?? 0:0}%")
+                { Foreground = MainText, FontWeight = FontWeights.SemiBold });
+            if (second != null)
+                _compactText.Inlines.Add(new System.Windows.Documents.Run($" · {second.Utilization:0}%") { Foreground = MutedText });
+            CompactRoot.ToolTip = null;
+        }
+
+        private static long WindowSeconds(string label)
+        {
+            var w = label[(label.LastIndexOf('-') + 1)..];
+            if (w.Length < 2 || !long.TryParse(w[..^1], out var n)) return long.MaxValue;
+            return w[^1] switch { 'm' => n * 60, 'h' => n * 3600, 'd' => n * 86400, _ => n };
         }
 
         public void ShowError(string? error)
@@ -367,6 +464,9 @@ public partial class FloatingWindow : Window
             _errorText.Text = "Sin datos: " + (error ?? "error desconocido");
             _errorText.ToolTip = error;
             _errorText.Visibility = Visibility.Visible;
+            _compactText.Text = "error";
+            _compactText.Foreground = ErrorText;
+            CompactRoot.ToolTip = error;
         }
 
         public void RefreshCountdowns()
@@ -388,6 +488,54 @@ public partial class FloatingWindow : Window
             _bars[label] = bar;
             _barsPanel.Children.Add(bar.Root);
             return bar;
+        }
+    }
+
+    private static Border MakeBadge(bool isClaude, (Color Light, Color Dark) accent, double size) => new()
+    {
+        Width = size, Height = size, CornerRadius = new CornerRadius(size / 4),
+        Background = new LinearGradientBrush(accent.Light, accent.Dark, 45),
+        Child = new TextBlock
+        {
+            Text = isClaude ? "C" : "X",
+            FontSize = size * 0.62, FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        }
+    };
+
+    private static (Color Light, Color Dark) LevelColors(double utilization, (Color Light, Color Dark) accent) =>
+        utilization >= 90 ? (Color.FromRgb(0xFF, 0x7A, 0x90), Color.FromRgb(0xE0, 0x24, 0x5E))
+        : utilization >= 75 ? (Color.FromRgb(0xFF, 0xD1, 0x66), Color.FromRgb(0xFF, 0x8C, 0x42))
+        : accent;
+
+    /// <summary>4px line used in the thin-bar mode.</summary>
+    private sealed class MiniBar
+    {
+        private const double TrackWidth = 72;
+        public Grid Root { get; } = new() { Width = TrackWidth, Height = 4 };
+        private readonly Border _fill;
+        private readonly (Color Light, Color Dark) _accent;
+
+        public MiniBar((Color Light, Color Dark) accent)
+        {
+            _accent = accent;
+            Root.Children.Add(new Border { CornerRadius = new CornerRadius(2), Background = TrackBrush });
+            _fill = new Border { CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Left, Width = 0 };
+            Root.Children.Add(_fill);
+        }
+
+        public void Set(double utilization)
+        {
+            var (light, dark) = LevelColors(utilization, _accent);
+            _fill.Background = new LinearGradientBrush(dark, light, 0);
+            double fraction = Math.Clamp(utilization / 100.0, 0, 1);
+            double target = fraction > 0 ? Math.Max(4, TrackWidth * fraction) : 0;
+            _fill.BeginAnimation(FrameworkElement.WidthProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(700))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
         }
     }
 
@@ -474,11 +622,7 @@ public partial class FloatingWindow : Window
 
         private void Paint(double utilization)
         {
-            var (light, dark) = utilization >= 90
-                ? (Color.FromRgb(0xFF, 0x7A, 0x90), Color.FromRgb(0xE0, 0x24, 0x5E))
-                : utilization >= 75
-                    ? (Color.FromRgb(0xFF, 0xD1, 0x66), Color.FromRgb(0xFF, 0x8C, 0x42))
-                    : _accent;
+            var (light, dark) = LevelColors(utilization, _accent);
             _fill.Background = new LinearGradientBrush(dark, light, 0);
             _glow.Color = dark;
         }
