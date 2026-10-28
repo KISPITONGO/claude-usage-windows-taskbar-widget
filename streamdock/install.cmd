@@ -16,8 +16,9 @@ if not exist "%ROOT%" (
 )
 
 echo Cerrando Stream Dock para instalar el plugin...
-for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "(Get-Process StreamDock -ErrorAction SilentlyContinue | Select-Object -First 1).Path"`) do set "SDEXE=%%P"
-taskkill /f /im StreamDock.exe >nul 2>&1
+rem El ejecutable cambia segun la version: StreamDock.exe o "Stream Dock AJAZZ.exe".
+for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$p = Get-Process | Where-Object { $_.Name -like 'Stream*Dock*' } | Select-Object -First 1; if ($p) { $p.Path; Stop-Process -Id $p.Id -Force }"`) do set "SDEXE=%%P"
+if not defined SDEXE if exist "%ProgramFiles(x86)%\Stream Dock AJAZZ Global\Stream Dock AJAZZ.exe" set "SDEXE=%ProgramFiles(x86)%\Stream Dock AJAZZ Global\Stream Dock AJAZZ.exe"
 taskkill /f /im TokenBarsDock.exe >nul 2>&1
 timeout /t 2 /nobreak >nul
 
