@@ -1,6 +1,6 @@
 {
   "Name": "TokenBars",
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "Author": "TokenBars",
   "Description": "Uso de Claude y Codex (límite de 5 h, semanal y tokens) en tus teclas.",
   "Category": "TokenBars",
@@ -103,6 +103,24 @@
       },
       "Controllers": [
         "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.knob",
+      "Name": "Perilla: cambiar vista",
+      "Tooltip": "Gira para cambiar la vista de las teclas Claude y Codex. Pulsa para actualizar.",
+      "Icon": "images/knob.png",
+      "States": [
+        {
+          "Image": "images/knob.png"
+        }
+      ],
+      "Settings": {},
+      "Controllers": [
+        "Knob"
       ],
       "UserTitleEnabled": false,
       "SupportedInMultiActions": false,

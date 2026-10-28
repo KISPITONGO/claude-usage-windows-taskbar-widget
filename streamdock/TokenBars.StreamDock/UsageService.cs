@@ -110,7 +110,7 @@ internal sealed class UsageService
         var tokens = isClaude ? _claudeTokens : _codexTokens;
         var previous = isClaude ? Claude : Codex;
         if (client == null)
-            return previous with { Tokens = tokens, Error = isClaude ? "Inicia sesión\nen Claude Code" : "Inicia sesión\nen Codex CLI" };
+            return previous with { Tokens = tokens, Error = "Sin sesión" };
 
         UsageData? data;
         try { data = await client.GetUsageAsync(force); }

@@ -3,29 +3,31 @@ using SkiaSharp;
 
 namespace TokenBars.StreamDock;
 
-/// <summary>What a service key shows. Pressing the key moves to the next view.</summary>
+/// <summary>What a service key shows. Pressing the key (or turning a knob) moves to the next view.</summary>
 internal enum KeyView { Both = 0, Session = 1, Week = 2, Tokens = 3 }
 
-/// <summary>Draws the key images (144×144 PNG, Stream Dock scales them to the key).</summary>
+/// <summary>
+/// Draws the key images. They are drawn at 144×144 and Stream Dock scales them down;
+/// the AKP03 keys are only 60×60 px, so nothing is smaller than ~20 px here (≈8 px on the key).
+/// </summary>
 internal static class KeyRenderer
 {
     public const int Size = 144;
 
-    private static readonly SKColor Background = SKColor.Parse("#17171C");
-    private static readonly SKColor Track = SKColor.Parse("#2C2C34");
-    private static readonly SKColor Text = SKColor.Parse("#F2F2F5");
-    private static readonly SKColor Muted = SKColor.Parse("#9A9AA6");
+    private static readonly SKColor Background = SKColor.Parse("#111114");
+    private static readonly SKColor Track = SKColor.Parse("#2E2E37");
+    private static readonly SKColor Text = SKColor.Parse("#F4F4F7");
+    private static readonly SKColor Muted = SKColor.Parse("#A3A3AF");
     private static readonly SKColor ClaudeColor = SKColor.Parse("#D97757");
     private static readonly SKColor CodexColor = SKColor.Parse("#10A37F");
     private static readonly SKColor Amber = SKColor.Parse("#F5A524");
     private static readonly SKColor Red = SKColor.Parse("#E5484D");
 
     private static readonly SKTypeface Bold = Typeface(SKFontStyle.Bold);
-    private static readonly SKTypeface Regular = Typeface(SKFontStyle.Normal);
 
     private static SKTypeface Typeface(SKFontStyle style)
     {
-        foreach (var family in new[] { "Segoe UI", "Segoe UI Variable", "Arial", "DejaVu Sans" })
+        foreach (var family in new[] { "Segoe UI", "Arial", "DejaVu Sans" })
         {
             var tf = SKTypeface.FromFamilyName(family, style);
             if (tf != null && tf.FamilyName == family) return tf;
@@ -43,73 +45,55 @@ internal static class KeyRenderer
 
     public static byte[] Service(ServiceSnapshot s, KeyView view) => Draw(c =>
     {
-        Header(c, s.IsClaude);
+        var name = s.IsClaude ? "Claude" : "Codex";
+        Label(c, name, 8, 26, 24, Accent(s.IsClaude));
 
         if (view == KeyView.Tokens)
         {
-            TokensBody(c, s.IsClaude, s.Tokens, top: 44);
-            return;
-        }
-        if (s.Error != null && !s.HasData)
-        {
-            Message(c, s.Error);
+            Label(c, Tok(s.Tokens?.Today), Size / 2f, 78, 44, Text, SKTextAlign.Center);
+            Label(c, "tokens hoy", Size / 2f, 102, 20, Muted, SKTextAlign.Center);
+            Label(c, "7d " + Tok(s.Tokens?.Last7Days), Size / 2f, 134, 24, Muted, SKTextAlign.Center);
             return;
         }
         if (!s.HasData)
         {
-            Message(c, "Cargando…");
+            Message(c, s.Error ?? "Cargando");
             return;
         }
 
         switch (view)
         {
-            case KeyView.Session: BigGauge(c, s.IsClaude, s.Session); break;
-            case KeyView.Week: BigGauge(c, s.IsClaude, s.Week); break;
+            case KeyView.Session:
+                Gauge(c, s.IsClaude, s.Session, "5h");
+                break;
+            case KeyView.Week:
+                Gauge(c, s.IsClaude, s.Week, "sem");
+                break;
             default:
-                BarBlock(c, s.IsClaude, s.Session, top: 40);
-                BarBlock(c, s.IsClaude, s.Week, top: 92);
+                Row(c, s.IsClaude, "5h", s.Session, top: 36);
+                Row(c, s.IsClaude, "sem", s.Week, top: 90);
                 break;
         }
     });
 
-    /// <summary>Both services on one key: four thin bars.</summary>
+    /// <summary>Both services on one key: four fat bars, labelled in the service colour.</summary>
     public static byte[] Combined(ServiceSnapshot claude, ServiceSnapshot codex) => Draw(c =>
     {
-        float y = 8;
+        float y = 6;
         foreach (var s in new[] { claude, codex })
         {
-            using var name = new SKPaint { Typeface = Bold, TextSize = 17, Color = Accent(s.IsClaude), IsAntialias = true };
-            c.DrawText(s.IsClaude ? "Claude" : "Codex", 10, y + 15, name);
-            if (!s.HasData)
-            {
-                using var p = new SKPaint { Typeface = Regular, TextSize = 14, Color = Muted, IsAntialias = true };
-                c.DrawText(s.Error?.Split('\n')[0] ?? "Cargando…", 10, y + 40, p);
-                y += 68;
-                continue;
-            }
-            MiniRow(c, s.IsClaude, s.Session, y + 22);
-            MiniRow(c, s.IsClaude, s.Week, y + 44);
-            y += 68;
+            FatBar(c, s.IsClaude, "5h", s.Session, y);
+            FatBar(c, s.IsClaude, "7d", s.Week, y + 33);
+            y += 72;
         }
     });
 
-    /// <summary>Local token counts (Claude Code + Codex CLI) for today and the last 7 days.</summary>
+    /// <summary>Local token counts for today (Claude Code + Codex CLI).</summary>
     public static byte[] Tokens(ServiceSnapshot claude, ServiceSnapshot codex) => Draw(c =>
     {
-        using var title = new SKPaint { Typeface = Bold, TextSize = 17, Color = Text, IsAntialias = true };
-        c.DrawText("Tokens hoy", 10, 24, title);
-
-        float y = 32;
-        foreach (var s in new[] { claude, codex })
-        {
-            using var big = new SKPaint { Typeface = Bold, TextSize = 25, Color = Text, IsAntialias = true };
-            c.DrawText(s.Tokens != null ? LocalTokenCounter.Format(s.Tokens.Today) : "–", 10, y + 26, big);
-            using var name = new SKPaint { Typeface = Bold, TextSize = 14, Color = Accent(s.IsClaude), IsAntialias = true, TextAlign = SKTextAlign.Right };
-            c.DrawText(s.IsClaude ? "Claude" : "Codex", Size - 10, y + 25, name);
-            using var week = new SKPaint { Typeface = Regular, TextSize = 13, Color = Muted, IsAntialias = true };
-            c.DrawText(s.Tokens != null ? "7 días: " + LocalTokenCounter.Format(s.Tokens.Last7Days) : "", 10, y + 44, week);
-            y += 56;
-        }
+        Label(c, "tokens hoy", Size / 2f, 26, 22, Muted, SKTextAlign.Center);
+        Label(c, Tok(claude.Tokens?.Today), Size / 2f, 78, 40, ClaudeColor, SKTextAlign.Center);
+        Label(c, Tok(codex.Tokens?.Today), Size / 2f, 128, 40, CodexColor, SKTextAlign.Center);
     });
 
     /// <summary>Static icon used in the action list before the plugin draws anything.</summary>
@@ -131,12 +115,30 @@ internal static class KeyRenderer
         float[] fill = { 0.62f, 0.38f };
         for (int i = 0; i < 2; i++)
         {
-            var y = (24 + i * 18) * k;
+            var y = (22 + i * 18) * k;
             using var t = new SKPaint { Color = Track, IsAntialias = true };
-            c.DrawRoundRect(new SKRect(12 * k, y, 60 * k, y + 10 * k), 5 * k, 5 * k, t);
+            c.DrawRoundRect(new SKRect(12 * k, y, 60 * k, y + 12 * k), 6 * k, 6 * k, t);
             using var f = new SKPaint { Color = colors[i], IsAntialias = true };
-            c.DrawRoundRect(new SKRect(12 * k, y, (12 + 48 * fill[i]) * k, y + 10 * k), 5 * k, 5 * k, f);
+            c.DrawRoundRect(new SKRect(12 * k, y, (12 + 48 * fill[i]) * k, y + 12 * k), 6 * k, 6 * k, f);
         }
+        return Encode(surface);
+    }
+
+    /// <summary>Icon for the knob action: a dial with an arrow.</summary>
+    public static byte[] KnobIcon(int size)
+    {
+        var info = new SKImageInfo(size, size);
+        using var surface = SKSurface.Create(info);
+        var c = surface.Canvas;
+        c.Clear(SKColors.Transparent);
+        float k = size / 72f;
+        using var bg = new SKPaint { Color = Background, IsAntialias = true };
+        c.DrawRoundRect(new SKRect(0, 0, size, size), 14 * k, 14 * k, bg);
+        var rect = new SKRect(18 * k, 18 * k, 54 * k, 54 * k);
+        using var a = new SKPaint { Color = ClaudeColor, Style = SKPaintStyle.Stroke, StrokeWidth = 6 * k, IsAntialias = true, StrokeCap = SKStrokeCap.Round };
+        c.DrawArc(rect, 200, 140, false, a);
+        using var b = new SKPaint { Color = CodexColor, Style = SKPaintStyle.Stroke, StrokeWidth = 6 * k, IsAntialias = true, StrokeCap = SKStrokeCap.Round };
+        c.DrawArc(rect, 20, 140, false, b);
         return Encode(surface);
     }
 
@@ -159,44 +161,36 @@ internal static class KeyRenderer
         return data.ToArray();
     }
 
-    private static void Header(SKCanvas c, bool claude)
+    private static void Label(SKCanvas c, string text, float x, float y, float size, SKColor color,
+                              SKTextAlign align = SKTextAlign.Left)
     {
-        using var dot = new SKPaint { Color = Accent(claude), IsAntialias = true };
-        c.DrawCircle(16, 20, 6, dot);
-        using var name = new SKPaint { Typeface = Bold, TextSize = 19, Color = Accent(claude), IsAntialias = true };
-        c.DrawText(claude ? "Claude" : "Codex", 28, 27, name);
+        using var p = new SKPaint { Typeface = Bold, TextSize = size, Color = color, IsAntialias = true, TextAlign = align };
+        c.DrawText(text, x, y, p);
     }
 
-    /// <summary>Label + percent on one line, the bar, and the reset countdown below.</summary>
-    private static void BarBlock(SKCanvas c, bool claude, Window? w, float top)
+    /// <summary>Window label on the left, big percent on the right, fat bar underneath.</summary>
+    private static void Row(SKCanvas c, bool claude, string label, Window? w, float top)
     {
-        using var label = new SKPaint { Typeface = Regular, TextSize = 14, Color = Muted, IsAntialias = true };
-        c.DrawText(w?.Name ?? "–", 10, top + 13, label);
-
-        using var pct = new SKPaint { Typeface = Bold, TextSize = 20, Color = w != null ? BarColor(claude, w.Percent) : Muted, IsAntialias = true, TextAlign = SKTextAlign.Right };
-        c.DrawText(w != null ? $"{w.Percent:0}%" : "–", Size - 10, top + 15, pct);
-
-        Bar(c, claude, w, new SKRect(10, top + 22, Size - 10, top + 34));
-
-        if (w != null)
-        {
-            using var reset = new SKPaint { Typeface = Regular, TextSize = 12, Color = Muted, IsAntialias = true };
-            c.DrawText("reinicia " + Countdown(w.ResetsAt), 10, top + 48, reset);
-        }
+        Label(c, label, 8, top + 24, 22, Muted);
+        Label(c, Pct(w), Size - 8, top + 28, 32, w != null ? BarColor(claude, w.Percent) : Muted, SKTextAlign.Right);
+        Bar(c, claude, w, new SKRect(8, top + 36, Size - 8, top + 52));
     }
 
-    private static void MiniRow(SKCanvas c, bool claude, Window? w, float top)
+    /// <summary>One row of the combined key: service-coloured tag, bar with the percent inside.</summary>
+    private static void FatBar(SKCanvas c, bool claude, string tag, Window? w, float top)
     {
-        using var label = new SKPaint { Typeface = Regular, TextSize = 12, Color = Muted, IsAntialias = true };
-        c.DrawText(w == null ? "–" : w.Name == "Semana" ? "7 d" : w.Name, 10, top + 13, label);
-        Bar(c, claude, w, new SKRect(40, top + 3, 98, top + 13));
-        using var pct = new SKPaint { Typeface = Bold, TextSize = 15, Color = w != null ? BarColor(claude, w.Percent) : Muted, IsAntialias = true, TextAlign = SKTextAlign.Right };
-        c.DrawText(w != null ? $"{w.Percent:0}%" : "–", Size - 8, top + 14, pct);
+        Label(c, tag, 17, top + 22, 19, Accent(claude), SKTextAlign.Center);
+        var r = new SKRect(36, top, Size - 6, top + 29);
+        Bar(c, claude, w, r, paceMarker: false);
+        using var p = new SKPaint { Typeface = Bold, TextSize = 24, Color = Text, IsAntialias = true, TextAlign = SKTextAlign.Right };
+        using var shadow = new SKPaint { Typeface = Bold, TextSize = 24, Color = SKColors.Black.WithAlpha(150), IsAntialias = true, TextAlign = SKTextAlign.Right };
+        c.DrawText(Pct(w), r.Right - 7, top + 23, shadow);
+        c.DrawText(Pct(w), r.Right - 8, top + 22, p);
     }
 
-    private static void Bar(SKCanvas c, bool claude, Window? w, SKRect r)
+    private static void Bar(SKCanvas c, bool claude, Window? w, SKRect r, bool paceMarker = true)
     {
-        float radius = r.Height / 2;
+        float radius = Math.Min(8, r.Height / 2);
         using var track = new SKPaint { Color = Track, IsAntialias = true };
         c.DrawRoundRect(r, radius, radius, track);
         if (w == null) return;
@@ -204,89 +198,77 @@ internal static class KeyRenderer
         var frac = (float)Math.Clamp(w.Percent / 100, 0, 1);
         if (frac > 0)
         {
-            var fillRect = new SKRect(r.Left, r.Top, r.Left + Math.Max(r.Height, r.Width * frac), r.Bottom);
+            var fillRect = new SKRect(r.Left, r.Top, r.Left + Math.Max(radius * 2, r.Width * frac), r.Bottom);
             using var fill = new SKPaint { Color = BarColor(claude, w.Percent), IsAntialias = true };
             c.DrawRoundRect(fillRect, radius, radius, fill);
         }
 
         // Pace marker: where the bar would be if usage were spread evenly over the window.
         var elapsed = w.Elapsed;
-        if (elapsed >= 0)
+        if (paceMarker && elapsed >= 0)
         {
             var x = r.Left + r.Width * (float)elapsed;
-            using var tick = new SKPaint { Color = Text.WithAlpha(210), StrokeWidth = 2, IsAntialias = true };
+            using var tick = new SKPaint { Color = Text, StrokeWidth = 4, IsAntialias = true };
             c.DrawLine(x, r.Top - 3, x, r.Bottom + 3, tick);
         }
     }
 
-    /// <summary>One window filling the key: ring with the percent in the middle.</summary>
-    private static void BigGauge(SKCanvas c, bool claude, Window? w)
+    /// <summary>One window filling the key: ring with the percent inside, reset time in the gap.</summary>
+    private static void Gauge(SKCanvas c, bool claude, Window? w, string label)
     {
-        var center = new SKPoint(Size / 2f, 82);
-        const float radius = 40;
+        var center = new SKPoint(Size / 2f, 86);
+        const float radius = 42;
+        const float stroke = 15;
         var rect = new SKRect(center.X - radius, center.Y - radius, center.X + radius, center.Y + radius);
 
-        using var track = new SKPaint { Color = Track, Style = SKPaintStyle.Stroke, StrokeWidth = 11, IsAntialias = true, StrokeCap = SKStrokeCap.Round };
+        using var track = new SKPaint { Color = Track, Style = SKPaintStyle.Stroke, StrokeWidth = stroke, IsAntialias = true, StrokeCap = SKStrokeCap.Round };
         c.DrawArc(rect, 135, 270, false, track);
 
         if (w != null)
         {
             var frac = (float)Math.Clamp(w.Percent / 100, 0, 1);
-            using var arc = new SKPaint { Color = BarColor(claude, w.Percent), Style = SKPaintStyle.Stroke, StrokeWidth = 11, IsAntialias = true, StrokeCap = SKStrokeCap.Round };
+            using var arc = new SKPaint { Color = BarColor(claude, w.Percent), Style = SKPaintStyle.Stroke, StrokeWidth = stroke, IsAntialias = true, StrokeCap = SKStrokeCap.Round };
             if (frac > 0) c.DrawArc(rect, 135, 270 * frac, false, arc);
 
             var elapsed = w.Elapsed;
             if (elapsed >= 0)
             {
                 var angle = (135 + 270 * elapsed) * Math.PI / 180;
-                var inner = new SKPoint(center.X + (float)Math.Cos(angle) * (radius - 9), center.Y + (float)Math.Sin(angle) * (radius - 9));
-                var outer = new SKPoint(center.X + (float)Math.Cos(angle) * (radius + 9), center.Y + (float)Math.Sin(angle) * (radius + 9));
-                using var tick = new SKPaint { Color = Text.WithAlpha(210), StrokeWidth = 2.5f, IsAntialias = true };
+                var inner = new SKPoint(center.X + (float)Math.Cos(angle) * (radius - 8), center.Y + (float)Math.Sin(angle) * (radius - 8));
+                var outer = new SKPoint(center.X + (float)Math.Cos(angle) * (radius + 11), center.Y + (float)Math.Sin(angle) * (radius + 11));
+                using var tick = new SKPaint { Color = Text, StrokeWidth = 4, IsAntialias = true };
                 c.DrawLine(inner, outer, tick);
             }
         }
 
-        using var pct = new SKPaint { Typeface = Bold, TextSize = 28, Color = Text, IsAntialias = true, TextAlign = SKTextAlign.Center };
-        c.DrawText(w != null ? $"{w.Percent:0}%" : "–", center.X, center.Y + 6, pct);
-        using var name = new SKPaint { Typeface = Regular, TextSize = 13, Color = Muted, IsAntialias = true, TextAlign = SKTextAlign.Center };
-        c.DrawText(w?.Name.ToLowerInvariant() ?? "", center.X, center.Y + 24, name);
-
+        Label(c, Pct(w), center.X, center.Y + 6, 28, Text, SKTextAlign.Center);
+        Label(c, label, center.X, center.Y + 27, 19, Muted, SKTextAlign.Center);
         if (w != null)
-        {
-            using var reset = new SKPaint { Typeface = Regular, TextSize = 13, Color = Muted, IsAntialias = true, TextAlign = SKTextAlign.Center };
-            c.DrawText("reinicia " + Countdown(w.ResetsAt), center.X, Size - 6, reset);
-        }
-    }
-
-    private static void TokensBody(SKCanvas c, bool claude, TokenTotals? t, float top)
-    {
-        using var label = new SKPaint { Typeface = Regular, TextSize = 14, Color = Muted, IsAntialias = true };
-        using var big = new SKPaint { Typeface = Bold, TextSize = 30, Color = Text, IsAntialias = true };
-        using var mid = new SKPaint { Typeface = Bold, TextSize = 22, Color = Text, IsAntialias = true };
-        c.DrawText("hoy", 10, top + 12, label);
-        c.DrawText(t != null ? LocalTokenCounter.Format(t.Today) : "–", 10, top + 44, big);
-        c.DrawText("7 días", 10, top + 66, label);
-        c.DrawText(t != null ? LocalTokenCounter.Format(t.Last7Days) : "–", 10, top + 92, mid);
+            Label(c, Countdown(w.ResetsAt), center.X, Size - 4, 21, Muted, SKTextAlign.Center);
     }
 
     private static void Message(SKCanvas c, string text)
     {
-        using var p = new SKPaint { Typeface = Regular, TextSize = 16, Color = Muted, IsAntialias = true, TextAlign = SKTextAlign.Center };
-        var lines = text.Split('\n');
-        float y = 84 - (lines.Length - 1) * 10;
+        var lines = text.Split(' ', '\n');
+        float y = 88 - (lines.Length - 1) * 14;
         foreach (var line in lines)
         {
-            c.DrawText(line, Size / 2f, y, p);
-            y += 21;
+            Label(c, line, Size / 2f, y, 26, Muted, SKTextAlign.Center);
+            y += 30;
         }
     }
 
+    private static string Pct(Window? w) => w != null ? $"{w.Percent:0}%" : "–";
+
+    private static string Tok(long? tokens) => tokens is { } t ? LocalTokenCounter.Format(t) : "–";
+
+    /// <summary>Compact time until reset: "38m", "2h11m", "2d9h".</summary>
     internal static string Countdown(DateTimeOffset resetsAt)
     {
         var left = resetsAt - DateTimeOffset.UtcNow;
         if (resetsAt == DateTimeOffset.UnixEpoch || left <= TimeSpan.Zero) return "ahora";
-        if (left.TotalDays >= 1) return $"{(int)left.TotalDays} d {left.Hours} h";
-        if (left.TotalHours >= 1) return $"{(int)left.TotalHours} h {left.Minutes:00} m";
-        return $"{Math.Max(1, (int)Math.Ceiling(left.TotalMinutes))} m";
+        if (left.TotalDays >= 1) return $"{(int)left.TotalDays}d{left.Hours}h";
+        if (left.TotalHours >= 1) return $"{(int)left.TotalHours}h{left.Minutes:00}m";
+        return $"{Math.Max(1, (int)Math.Ceiling(left.TotalMinutes))}m";
     }
 }

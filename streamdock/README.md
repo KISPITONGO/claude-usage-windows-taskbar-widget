@@ -1,20 +1,24 @@
 # TokenBars para Stream Dock (Ajazz / Mirabox)
 
-Plugin para el software **Stream Dock** de Ajazz/Mirabox (AKP153, AKP03, AKP815, N3…)
+Plugin para el software **Stream Dock** de Ajazz/Mirabox, pensado para el **AKP03**
+(6 teclas con pantalla de 60×60 px, 3 botones y 3 perillas; sirve también en AKP153, N3…)
 que muestra en las teclas el uso de **Claude** y **Codex (ChatGPT)**: límite de 5 h,
 límite semanal y tokens. Usa la misma lógica que el widget de la barra de tareas:
 lee las credenciales de `~/.claude` y `~/.codex` (también dentro de WSL).
 
-![Vista previa de las teclas](preview.png)
+![Vista previa de las teclas a 60×60 px, ampliada](preview.png)
 
 ## Teclas
 
 | Acción | Qué muestra | Al pulsar |
 |---|---|---|
-| **Claude** | Barras de 5 h y semana con % y cuándo se reinician | Cambia de vista: ambas → anillo 5 h → anillo semana → tokens |
+| **Claude** | Barras de 5 h y semana (`sem`) con su % | Cambia de vista: barras → anillo 5 h → anillo semana → tokens |
 | **Codex** | Lo mismo para Codex | Igual que Claude |
-| **Claude + Codex** | Las cuatro barras en una tecla | Actualiza ya |
-| **Tokens hoy** | Tokens de hoy y de 7 días de Claude Code y Codex CLI | Actualiza ya |
+| **Claude + Codex** | Cuatro barras: arriba Claude (naranja), abajo Codex (verde), cada uno 5h y 7d | Actualiza ya |
+| **Tokens hoy** | Tokens de hoy de Claude (naranja) y Codex (verde) | Actualiza ya |
+| **Perilla: cambiar vista** | (las perillas no tienen pantalla) | Girar cambia la vista de todas las teclas Claude/Codex; pulsar actualiza |
+
+En los anillos, el texto de abajo es lo que falta para el reinicio (`2h11m`, `2d9h`).
 
 Colores: Claude naranja, Codex verde; la barra pasa a ámbar desde el 75 % y a rojo desde el 90 %.
 La rayita blanca marca el ritmo: dónde estaría la barra si gastaras el límite de forma pareja

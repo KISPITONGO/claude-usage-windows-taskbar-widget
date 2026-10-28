@@ -129,19 +129,30 @@ internal static class Program
             case "willDisappear":
                 Keys.TryRemove(context, out _);
                 break;
-            case "keyDown":
+            case "dialRotate":
+            {
+                // Knob: turn to change the view of every Claude/Codex key at once.
+                var ticks = msg?["payload"]?["ticks"]?.GetValue<int>() ?? 0;
+                if (ticks == 0) break;
+                foreach (var (ctx, k) in Keys)
+                {
+                    if (!IsServiceKey(k)) continue;
+                    k.View = (KeyView)((((int)k.View + Math.Sign(ticks)) % 4 + 4) % 4);
+                    await SaveViewAsync(ctx, k);
+                }
+                await RedrawAllAsync();
+                break;
+            }
             case "dialDown":
+                _ = Usage.RefreshAsync(force: true);
+                break;
+            case "keyDown":
             {
                 if (!Keys.TryGetValue(context, out var key)) break;
-                if (key.Action.EndsWith(".claude") || key.Action.EndsWith(".codex"))
+                if (IsServiceKey(key))
                 {
                     key.View = (KeyView)(((int)key.View + 1) % 4);
-                    await SendAsync(new JsonObject
-                    {
-                        ["event"] = "setSettings",
-                        ["context"] = context,
-                        ["payload"] = new JsonObject { ["view"] = (int)key.View }
-                    });
+                    await SaveViewAsync(context, key);
                     await DrawAsync(context, key);
                 }
                 // Any press also asks for fresh numbers.
@@ -150,6 +161,16 @@ internal static class Program
             }
         }
     }
+
+    private static bool IsServiceKey(Key key) =>
+        key.Action.EndsWith(".claude") || key.Action.EndsWith(".codex");
+
+    private static Task SaveViewAsync(string context, Key key) => SendAsync(new JsonObject
+    {
+        ["event"] = "setSettings",
+        ["context"] = context,
+        ["payload"] = new JsonObject { ["view"] = (int)key.View }
+    });
 
     /// <summary>Redraw once a minute so the reset countdowns and pace markers keep moving.</summary>
     private static async Task TickAsync(CancellationToken ct)
@@ -169,6 +190,7 @@ internal static class Program
 
     private static async Task DrawAsync(string context, Key key)
     {
+        if (key.Action.EndsWith(".knob")) return; // knobs on the AKP03 have no screen
         byte[] png;
         try { png = Render(key.Action, key.View, Usage.Claude, Usage.Codex); }
         catch (Exception ex) { Log.Write("Render: " + ex.Message); return; }
@@ -237,7 +259,7 @@ internal static class Program
         File.WriteAllBytes(Path.Combine(dir, "combined.png"), KeyRenderer.Combined(claude, codex));
         File.WriteAllBytes(Path.Combine(dir, "tokens.png"), KeyRenderer.Tokens(claude, codex));
         File.WriteAllBytes(Path.Combine(dir, "claude-error.png"),
-            KeyRenderer.Service(new ServiceSnapshot(true, null, null, null, "Inicia sesión\nen Claude Code", DateTimeOffset.UtcNow), KeyView.Both));
+            KeyRenderer.Service(new ServiceSnapshot(true, null, null, null, "Sin sesión", DateTimeOffset.UtcNow), KeyView.Both));
         Console.WriteLine("Vistas previas en " + dir);
         return 0;
     }
@@ -250,6 +272,8 @@ internal static class Program
             File.WriteAllBytes(Path.Combine(dir, $"{name}.png"), KeyRenderer.Icon(claude, 72));
             File.WriteAllBytes(Path.Combine(dir, $"{name}@2x.png"), KeyRenderer.Icon(claude, 144));
         }
+        File.WriteAllBytes(Path.Combine(dir, "knob.png"), KeyRenderer.KnobIcon(72));
+        File.WriteAllBytes(Path.Combine(dir, "knob@2x.png"), KeyRenderer.KnobIcon(144));
         return 0;
     }
 }
