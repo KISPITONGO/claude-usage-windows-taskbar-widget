@@ -986,6 +986,12 @@ public partial class MainWindow : Window
             menu.AddSeparator();
         }
         menu.AddItem("Open Settings", OpenSettings);
+        menu.AddItem("Barras flotantes", () =>
+        {
+            settings.FloatingMode = true;
+            settings.Save();
+            FloatingWindow.Restart();
+        });
         menu.AddSeparator();
         menu.AddItem("Quit", () => Application.Current.Shutdown());
 

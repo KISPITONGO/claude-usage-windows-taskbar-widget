@@ -1,0 +1,85 @@
+<Window x:Class="ClaudeUsageWidgetProvider.FloatingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Topmost="True"
+        AllowsTransparency="True"
+        Background="Transparent"
+        SizeToContent="WidthAndHeight"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="Grayscale"
+        TextOptions.TextHintingMode="Fixed"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        Title="Token Bars">
+  <Window.Resources>
+    <LinearGradientBrush x:Key="RimBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#D97757" Offset="0"/>
+      <GradientStop Color="#7C5CFF" Offset="0.5"/>
+      <GradientStop Color="#10A37F" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="FaceBrush" StartPoint="0,0" EndPoint="0,1">
+      <GradientStop Color="#1C1B25" Offset="0"/>
+      <GradientStop Color="#111117" Offset="1"/>
+    </LinearGradientBrush>
+    <!-- La sombra va en una capa aparte: un Effect sobre el contenedor convertiría
+         todo el contenido (texto incluido) en un bitmap y se vería borroso. -->
+    <DropShadowEffect x:Key="Shadow" BlurRadius="22" ShadowDepth="4" Opacity="0.55" Color="#000000"/>
+  </Window.Resources>
+
+  <Grid x:Name="RootGrid">
+    <!-- Modo barra fina -->
+    <Grid x:Name="ThinBar" Margin="12" Visibility="Collapsed" Background="Transparent">
+      <Border CornerRadius="18" Background="#101016" Effect="{StaticResource Shadow}"/>
+      <Border CornerRadius="18" BorderThickness="1.3" BorderBrush="{StaticResource RimBrush}"
+              Background="{StaticResource FaceBrush}" Padding="13,8,13,8">
+        <StackPanel Orientation="Horizontal">
+          <StackPanel x:Name="CompactPanel" Orientation="Horizontal" VerticalAlignment="Center"/>
+          <Ellipse x:Name="BarStatusDot" Width="7" Height="7" Margin="10,0,0,0"
+                   Fill="#6E6E85" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Tarjeta completa (en modo barra se muestra en el popup al pasar el mouse) -->
+    <Grid x:Name="Card" Margin="14" Width="252" Background="Transparent">
+      <Border CornerRadius="16" Background="#101016" Effect="{StaticResource Shadow}"/>
+      <Border CornerRadius="16" BorderThickness="1.5" BorderBrush="{StaticResource RimBrush}"
+              Background="{StaticResource FaceBrush}">
+        <StackPanel Margin="13,11,13,10">
+          <Grid Margin="0,0,0,9">
+            <TextBlock Text="TOKEN BARS" FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center">
+              <TextBlock.Foreground>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                  <GradientStop Color="#F4A27E" Offset="0"/>
+                  <GradientStop Color="#A08CFF" Offset="0.55"/>
+                  <GradientStop Color="#4FE3A8" Offset="1"/>
+                </LinearGradientBrush>
+              </TextBlock.Foreground>
+            </TextBlock>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+              <TextBlock x:Name="UpdatedText" FontSize="10.5" Foreground="#8080A0"
+                         VerticalAlignment="Center" Margin="0,0,6,0"/>
+              <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="#6E6E85" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Grid>
+
+          <StackPanel x:Name="ServicesPanel"/>
+
+          <TextBlock x:Name="HintText" Margin="0,8,0,0" FontSize="9.5" Foreground="#6A6A82"
+                     HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"
+                     Text="Arrastra · 2 clics: actualizar · clic der.: menú"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Popup x:Name="DetailPopup" PlacementTarget="{Binding ElementName=ThinBar}" Placement="Bottom"
+           AllowsTransparency="True" StaysOpen="True" PopupAnimation="Fade"
+           VerticalOffset="-8">
+      <Border x:Name="PopupHost" Background="Transparent"/>
+    </Popup>
+  </Grid>
+</Window>

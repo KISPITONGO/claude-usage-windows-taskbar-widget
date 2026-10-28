@@ -12,3 +12,5 @@ riderModule.iml
 *.user
 *.suo
 *.ps1
+out/
+out-small/
