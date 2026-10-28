@@ -312,6 +312,9 @@ internal sealed class ClaudeApiClient : IDisposable
         return new UsageData { Limits = limits };
     }
 
+    // Public OAuth client id of Claude Code; the token endpoint needs it to refresh.
+    private const string ClaudeCodeClientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
+
     public async Task<bool> RefreshTokenAsync()
     {
         if (_credential == null || string.IsNullOrEmpty(_credential.RefreshToken))
@@ -325,7 +328,8 @@ internal sealed class ClaudeApiClient : IDisposable
             var content = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("grant_type", "refresh_token"),
-                new KeyValuePair<string, string>("refresh_token", _credential.RefreshToken)
+                new KeyValuePair<string, string>("refresh_token", _credential.RefreshToken),
+                new KeyValuePair<string, string>("client_id", ClaudeCodeClientId)
             });
 
             var response = await Http.PostAsync(

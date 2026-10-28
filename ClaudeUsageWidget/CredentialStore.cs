@@ -373,6 +373,7 @@ internal static class CredentialStore
     {
         var result = new List<AccountInfo>();
         var seen = new HashSet<string>();
+        var expired = new List<(string Key, AccountInfo Account)>();
 
         foreach (var source in AllSources)
         {
@@ -383,14 +384,25 @@ internal static class CredentialStore
             if (cred == null || string.IsNullOrEmpty(cred.AccessToken)) continue;
             cred.SourcePath = read.Value.SourcePath;
 
-            if (cred.IsExpired) continue; // skip — možná další zdroj má funkční token
-
             var key = MakeDedupKey(source.Service, cred);
             if (key == null) continue;
+
+            // Prefer a source with a live token, but keep expired ones as a fallback: the
+            // client refreshes them (or re-reads the file once the CLI has refreshed it).
+            // Dropping them made the whole account vanish after a night without using the CLI.
+            if (cred.IsExpired)
+            {
+                expired.Add((key, new AccountInfo(source.Service, cred, source.Label)));
+                continue;
+            }
             if (!seen.Add(key)) continue;
 
             result.Add(new AccountInfo(source.Service, cred, source.Label));
         }
+
+        foreach (var (key, account) in expired)
+            if (seen.Add(key))
+                result.Add(account);
 
         return result;
     }

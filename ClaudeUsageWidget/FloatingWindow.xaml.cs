@@ -496,6 +496,14 @@ public partial class FloatingWindow : Window
 
         public void ShowError(string? error)
         {
+            bool isClaude = Client.AccountService == ServiceType.Claude;
+            if (string.IsNullOrEmpty(Client.CredentialPath))
+                error = isClaude
+                    ? "No encontré tu sesión. Abre Claude Code e inicia sesión."
+                    : "No encontré tu sesión. Abre Codex CLI e inicia sesión.";
+            else if (error?.Contains("expired", StringComparison.OrdinalIgnoreCase) == true)
+                error = "La sesión venció. Abre " + (isClaude ? "Claude Code" : "Codex CLI") +
+                        " un momento y se renovará sola.";
             _errorText.Text = "Sin datos: " + (error ?? "error desconocido");
             _errorText.ToolTip = error;
             _errorText.Visibility = Visibility.Visible;

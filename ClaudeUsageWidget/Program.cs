@@ -185,8 +185,10 @@ internal class App : Application
                 WriteCrashLog("LoadAllAccounts FAILED: " + ex);
                 accounts = [];
             }
-            if (accounts.Count == 0)
-                accounts.Add(new AccountInfo(ServiceType.Claude, new OAuthCredential(), "no-credentials"));
+            // Always show both services; a missing login shows up as an error instead of hiding the section.
+            foreach (var service in new[] { ServiceType.Claude, ServiceType.Codex })
+                if (!accounts.Any(a => a.Service == service))
+                    accounts.Add(new AccountInfo(service, new OAuthCredential(), "no-credentials"));
 
             await Dispatcher.InvokeAsync(() =>
             {
