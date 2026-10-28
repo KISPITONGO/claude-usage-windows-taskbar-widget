@@ -25,6 +25,7 @@ public partial class FloatingWindow : Window
     private static readonly Brush TrackBrush = Frozen(new SolidColorBrush(Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF)));
 
     private readonly List<Section> _sections = [];
+    private List<ClaudeApiClient> _allClients = [];
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromMinutes(1) };
     private readonly DispatcherTimer _textTimer = new() { Interval = TimeSpan.FromSeconds(30) };
     private DateTimeOffset _lastTokenScan = DateTimeOffset.MinValue;
@@ -63,6 +64,7 @@ public partial class FloatingWindow : Window
 
     internal async Task SetAccountsAsync(List<ClaudeApiClient> clients)
     {
+        _allClients = clients;
         ServicesPanel.Children.Clear();
         CompactPanel.Children.Clear();
         _sections.Clear();
@@ -72,6 +74,9 @@ public partial class FloatingWindow : Window
             .Where(c => c.AccountService is ServiceType.Claude or ServiceType.Codex)
             .OrderBy(c => c.AccountService)
             .ToList();
+        // Never end up with an empty bar (e.g. both hidden from the taskbar mode's settings).
+        if (ordered.Any(c => IsServiceShown(c.AccountService)))
+            ordered = ordered.Where(c => IsServiceShown(c.AccountService)).ToList();
         var seenServices = new HashSet<ServiceType>();
         foreach (var client in ordered)
         {
@@ -120,7 +125,8 @@ public partial class FloatingWindow : Window
             }
 
             bool anyError = false;
-            foreach (var section in _sections)
+            // Copy: toggling a service rebuilds _sections while this loop awaits.
+            foreach (var section in _sections.ToList())
             {
                 var usage = await section.Client.GetUsageAsync(force);
                 if (usage != null) section.Update(usage);
@@ -182,6 +188,13 @@ public partial class FloatingWindow : Window
         _topMostEnforcer = new TopMostEnforcer(hwnd);
         Closed += (_, _) => _topMostEnforcer?.Dispose();
     }
+
+    private static bool IsServiceShown(ServiceType service) => service switch
+    {
+        ServiceType.Claude => SettingsStore.Instance.ShowClaude,
+        ServiceType.Codex => SettingsStore.Instance.ShowCodex,
+        _ => false
+    };
 
     // Card vs. thin bar
 
@@ -295,7 +308,32 @@ public partial class FloatingWindow : Window
             ApplyMode();
         };
         menu.Items.Insert(0, mode);
-        menu.Items.Insert(1, new Separator());
+        int index = 1;
+        // Only services with a login on this PC can be toggled.
+        var available = _allClients.Select(c => c.AccountService)
+            .Where(s => s is ServiceType.Claude or ServiceType.Codex).Distinct().OrderBy(s => s).ToList();
+        foreach (var service in available)
+        {
+            var name = service == ServiceType.Claude ? "Claude" : "Codex";
+            bool shown = IsServiceShown(service);
+            var item = new MenuItem
+            {
+                Header = $"Mostrar {name}",
+                IsCheckable = true,
+                IsChecked = shown,
+                // Keep at least one service on screen.
+                IsEnabled = !shown || available.Count(IsServiceShown) > 1
+            };
+            item.Click += (_, _) =>
+            {
+                if (service == ServiceType.Claude) SettingsStore.Instance.ShowClaude = item.IsChecked;
+                else SettingsStore.Instance.ShowCodex = item.IsChecked;
+                SettingsStore.Instance.Save();
+                _ = SetAccountsAsync(_allClients);
+            };
+            menu.Items.Insert(index++, item);
+        }
+        menu.Items.Insert(index, new Separator());
 
         var reset = new MenuItem { Header = "Volver a la esquina" };
         reset.Click += (_, _) =>

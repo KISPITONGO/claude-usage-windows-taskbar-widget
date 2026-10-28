@@ -185,9 +185,10 @@ internal class App : Application
                 WriteCrashLog("LoadAllAccounts FAILED: " + ex);
                 accounts = [];
             }
-            // Always show both services; a missing login shows up as an error instead of hiding the section.
-            foreach (var service in new[] { ServiceType.Claude, ServiceType.Codex })
-                if (!accounts.Any(a => a.Service == service))
+            // A service never logged into on this PC is left out. An expired login still counts
+            // (it is refreshed or shown as an error). With no login at all, show both with the hint.
+            if (accounts.Count == 0)
+                foreach (var service in new[] { ServiceType.Claude, ServiceType.Codex })
                     accounts.Add(new AccountInfo(service, new OAuthCredential(), "no-credentials"));
 
             await Dispatcher.InvokeAsync(() =>
