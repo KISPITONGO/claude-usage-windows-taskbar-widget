@@ -1,0 +1,112 @@
+{
+  "Name": "TokenBars",
+  "Version": "1.0.0",
+  "Author": "TokenBars",
+  "Description": "Uso de Claude y Codex (límite de 5 h, semanal y tokens) en tus teclas.",
+  "Category": "TokenBars",
+  "CategoryIcon": "images/plugin.png",
+  "Icon": "images/plugin.png",
+  "URL": "https://github.com/KISPITONGO/claude-usage-windows-taskbar-widget",
+  "CodePath": "bin/TokenBarsDock.exe",
+  "CodePathWin": "bin/TokenBarsDock.exe",
+  "SDKVersion": 1,
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.tokenbars.streamdock.claude",
+      "Name": "Claude",
+      "Tooltip": "Límite de 5 h y semanal de Claude. Pulsa para cambiar de vista.",
+      "Icon": "images/claude.png",
+      "States": [
+        {
+          "Image": "images/claude.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {
+        "view": 0
+      },
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.codex",
+      "Name": "Codex",
+      "Tooltip": "Límite de 5 h y semanal de Codex (ChatGPT). Pulsa para cambiar de vista.",
+      "Icon": "images/codex.png",
+      "States": [
+        {
+          "Image": "images/codex.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {
+        "view": 0
+      },
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.both",
+      "Name": "Claude + Codex",
+      "Tooltip": "Las cuatro barras en una sola tecla.",
+      "Icon": "images/both.png",
+      "States": [
+        {
+          "Image": "images/both.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {
+        "view": 0
+      },
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.tokens",
+      "Name": "Tokens hoy",
+      "Tooltip": "Tokens de hoy y de 7 días (Claude Code y Codex CLI en este PC).",
+      "Icon": "images/both.png",
+      "States": [
+        {
+          "Image": "images/both.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {
+        "view": 0
+      },
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    }
+  ]
+}

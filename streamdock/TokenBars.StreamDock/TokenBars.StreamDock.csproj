@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- WinExe: Stream Dock launches the plugin without a console window. -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>TokenBarsDock</AssemblyName>
+    <RootNamespace>TokenBars.StreamDock</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Same credential discovery and API calls as the taskbar widget. -->
+    <Compile Include="..\..\ClaudeUsageWidget\ClaudeApiClient.cs" Link="Shared\ClaudeApiClient.cs" />
+    <Compile Include="..\..\ClaudeUsageWidget\CredentialStore.cs" Link="Shared\CredentialStore.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.8" />
+  </ItemGroup>
+
+</Project>
