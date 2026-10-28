@@ -211,7 +211,13 @@ internal static class Program
         {
             "claude" => KeyRenderer.Service(claude, view),
             "codex" => KeyRenderer.Service(codex, view),
+            "claude5h" => KeyRenderer.Service(claude, KeyView.Session),
+            "claudeweek" => KeyRenderer.Service(claude, KeyView.Week),
+            "codex5h" => KeyRenderer.Service(codex, KeyView.Session),
+            "codexweek" => KeyRenderer.Service(codex, KeyView.Week),
             "tokens" => KeyRenderer.Tokens(claude, codex),
+            "tokens7d" => KeyRenderer.Tokens(claude, codex, week: true),
+            "resets" => KeyRenderer.Resets(claude, codex),
             _ => KeyRenderer.Combined(claude, codex)
         };
 
@@ -258,6 +264,8 @@ internal static class Program
         }
         File.WriteAllBytes(Path.Combine(dir, "combined.png"), KeyRenderer.Combined(claude, codex));
         File.WriteAllBytes(Path.Combine(dir, "tokens.png"), KeyRenderer.Tokens(claude, codex));
+        File.WriteAllBytes(Path.Combine(dir, "tokens7d.png"), KeyRenderer.Tokens(claude, codex, week: true));
+        File.WriteAllBytes(Path.Combine(dir, "resets.png"), KeyRenderer.Resets(claude, codex));
         File.WriteAllBytes(Path.Combine(dir, "claude-error.png"),
             KeyRenderer.Service(new ServiceSnapshot(true, null, null, null, "Sin sesión", DateTimeOffset.UtcNow), KeyView.Both));
         Console.WriteLine("Vistas previas en " + dir);
@@ -272,6 +280,13 @@ internal static class Program
             File.WriteAllBytes(Path.Combine(dir, $"{name}.png"), KeyRenderer.Icon(claude, 72));
             File.WriteAllBytes(Path.Combine(dir, $"{name}@2x.png"), KeyRenderer.Icon(claude, 144));
         }
+        foreach (var (name, word) in new[] { ("today", "hoy"), ("week", "7d") })
+        {
+            File.WriteAllBytes(Path.Combine(dir, $"{name}.png"), KeyRenderer.WordIcon(word, 72));
+            File.WriteAllBytes(Path.Combine(dir, $"{name}@2x.png"), KeyRenderer.WordIcon(word, 144));
+        }
+        File.WriteAllBytes(Path.Combine(dir, "clock.png"), KeyRenderer.ClockIcon(72));
+        File.WriteAllBytes(Path.Combine(dir, "clock@2x.png"), KeyRenderer.ClockIcon(144));
         File.WriteAllBytes(Path.Combine(dir, "knob.png"), KeyRenderer.KnobIcon(72));
         File.WriteAllBytes(Path.Combine(dir, "knob@2x.png"), KeyRenderer.KnobIcon(144));
         return 0;

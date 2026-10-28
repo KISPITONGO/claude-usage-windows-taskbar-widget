@@ -1,6 +1,6 @@
 {
   "Name": "TokenBars",
-  "Version": "1.1.0",
+  "Version": "1.2.0",
   "Author": "TokenBars",
   "Description": "Uso de Claude y Codex (límite de 5 h, semanal y tokens) en tus teclas.",
   "Category": "TokenBars",
@@ -22,7 +22,7 @@
   "Actions": [
     {
       "UUID": "com.tokenbars.streamdock.claude",
-      "Name": "Claude",
+      "Name": "Claude (barras)",
       "Tooltip": "Límite de 5 h y semanal de Claude. Pulsa para cambiar de vista.",
       "Icon": "images/claude.png",
       "States": [
@@ -44,7 +44,7 @@
     },
     {
       "UUID": "com.tokenbars.streamdock.codex",
-      "Name": "Codex",
+      "Name": "Codex (barras)",
       "Tooltip": "Límite de 5 h y semanal de Codex (ChatGPT). Pulsa para cambiar de vista.",
       "Icon": "images/codex.png",
       "States": [
@@ -57,6 +57,86 @@
       "Settings": {
         "view": 0
       },
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.claude5h",
+      "Name": "Claude 5 h",
+      "Tooltip": "Anillo del límite de 5 h de Claude.",
+      "Icon": "images/claude.png",
+      "States": [
+        {
+          "Image": "images/claude.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {},
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.claudeweek",
+      "Name": "Claude semana",
+      "Tooltip": "Anillo del límite semanal de Claude.",
+      "Icon": "images/claude.png",
+      "States": [
+        {
+          "Image": "images/claude.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {},
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.codex5h",
+      "Name": "Codex 5 h",
+      "Tooltip": "Anillo del límite de 5 h de Codex.",
+      "Icon": "images/codex.png",
+      "States": [
+        {
+          "Image": "images/codex.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {},
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.codexweek",
+      "Name": "Codex semana",
+      "Tooltip": "Anillo del límite semanal de Codex.",
+      "Icon": "images/codex.png",
+      "States": [
+        {
+          "Image": "images/codex.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {},
       "Controllers": [
         "Keypad"
       ],
@@ -90,10 +170,10 @@
       "UUID": "com.tokenbars.streamdock.tokens",
       "Name": "Tokens hoy",
       "Tooltip": "Tokens de hoy y de 7 días (Claude Code y Codex CLI en este PC).",
-      "Icon": "images/both.png",
+      "Icon": "images/today.png",
       "States": [
         {
-          "Image": "images/both.png",
+          "Image": "images/today.png",
           "TitleAlignment": "bottom",
           "FontSize": "10"
         }
@@ -101,6 +181,46 @@
       "Settings": {
         "view": 0
       },
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.tokens7d",
+      "Name": "Tokens 7 días",
+      "Tooltip": "Tokens de los últimos 7 días (Claude Code y Codex CLI en este PC).",
+      "Icon": "images/week.png",
+      "States": [
+        {
+          "Image": "images/week.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {},
+      "Controllers": [
+        "Keypad"
+      ],
+      "UserTitleEnabled": false,
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true
+    },
+    {
+      "UUID": "com.tokenbars.streamdock.resets",
+      "Name": "Reinicio 5 h",
+      "Tooltip": "Cuánto falta para que se reinicie el límite de 5 h de Claude y de Codex.",
+      "Icon": "images/clock.png",
+      "States": [
+        {
+          "Image": "images/clock.png",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ],
+      "Settings": {},
       "Controllers": [
         "Keypad"
       ],

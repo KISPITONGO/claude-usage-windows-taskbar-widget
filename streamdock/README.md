@@ -12,10 +12,14 @@ lee las credenciales de `~/.claude` y `~/.codex` (también dentro de WSL).
 
 | Acción | Qué muestra | Al pulsar |
 |---|---|---|
-| **Claude** | Barras de 5 h y semana (`sem`) con su % | Cambia de vista: barras → anillo 5 h → anillo semana → tokens |
-| **Codex** | Lo mismo para Codex | Igual que Claude |
+| **Claude (barras)** | Barras de 5 h y semana (`sem`) con su % | Cambia de vista: barras → anillo 5 h → anillo semana → tokens |
+| **Codex (barras)** | Lo mismo para Codex | Igual que Claude |
+| **Claude 5 h** / **Claude semana** | Anillo fijo de ese límite y cuánto falta para el reinicio | Actualiza ya |
+| **Codex 5 h** / **Codex semana** | Igual para Codex | Actualiza ya |
 | **Claude + Codex** | Cuatro barras: arriba Claude (naranja), abajo Codex (verde), cada uno 5h y 7d | Actualiza ya |
 | **Tokens hoy** | Tokens de hoy de Claude (naranja) y Codex (verde) | Actualiza ya |
+| **Tokens 7 días** | Tokens de los últimos 7 días | Actualiza ya |
+| **Reinicio 5 h** | Cuánto falta para el reinicio de 5 h de Claude y de Codex | Actualiza ya |
 | **Perilla: cambiar vista** | (las perillas no tienen pantalla) | Girar cambia la vista de todas las teclas Claude/Codex; pulsar actualiza |
 
 En los anillos, el texto de abajo es lo que falta para el reinicio (`2h11m`, `2d9h`).

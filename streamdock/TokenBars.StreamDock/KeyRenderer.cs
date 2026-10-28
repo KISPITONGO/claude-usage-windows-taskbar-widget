@@ -89,11 +89,19 @@ internal static class KeyRenderer
     });
 
     /// <summary>Local token counts for today (Claude Code + Codex CLI).</summary>
-    public static byte[] Tokens(ServiceSnapshot claude, ServiceSnapshot codex) => Draw(c =>
+    public static byte[] Tokens(ServiceSnapshot claude, ServiceSnapshot codex, bool week = false) => Draw(c =>
     {
-        Label(c, "tokens hoy", Size / 2f, 26, 22, Muted, SKTextAlign.Center);
-        Label(c, Tok(claude.Tokens?.Today), Size / 2f, 78, 40, ClaudeColor, SKTextAlign.Center);
-        Label(c, Tok(codex.Tokens?.Today), Size / 2f, 128, 40, CodexColor, SKTextAlign.Center);
+        Label(c, week ? "tokens 7d" : "tokens hoy", Size / 2f, 26, 22, Muted, SKTextAlign.Center);
+        Label(c, Tok(week ? claude.Tokens?.Last7Days : claude.Tokens?.Today), Size / 2f, 78, 40, ClaudeColor, SKTextAlign.Center);
+        Label(c, Tok(week ? codex.Tokens?.Last7Days : codex.Tokens?.Today), Size / 2f, 128, 40, CodexColor, SKTextAlign.Center);
+    });
+
+    /// <summary>Time until the 5 h window of each service resets.</summary>
+    public static byte[] Resets(ServiceSnapshot claude, ServiceSnapshot codex) => Draw(c =>
+    {
+        Label(c, "reinicio 5h", Size / 2f, 26, 22, Muted, SKTextAlign.Center);
+        Label(c, claude.Session != null ? Countdown(claude.Session.ResetsAt) : "–", Size / 2f, 78, 34, ClaudeColor, SKTextAlign.Center);
+        Label(c, codex.Session != null ? Countdown(codex.Session.ResetsAt) : "–", Size / 2f, 128, 34, CodexColor, SKTextAlign.Center);
     });
 
     /// <summary>Static icon used in the action list before the plugin draws anything.</summary>
@@ -121,6 +129,36 @@ internal static class KeyRenderer
             using var f = new SKPaint { Color = colors[i], IsAntialias = true };
             c.DrawRoundRect(new SKRect(12 * k, y, (12 + 48 * fill[i]) * k, y + 12 * k), 6 * k, 6 * k, f);
         }
+        return Encode(surface);
+    }
+
+    /// <summary>Icon with a short word in Claude orange over Codex green ("hoy", "7d").</summary>
+    public static byte[] WordIcon(string word, int size) => SmallIcon(size, (c, k) =>
+    {
+        Label(c, word, 36 * k, 34 * k, 22 * k, ClaudeColor, SKTextAlign.Center);
+        using var line = new SKPaint { Color = CodexColor, IsAntialias = true };
+        c.DrawRoundRect(new SKRect(16 * k, 44 * k, 56 * k, 52 * k), 4 * k, 4 * k, line);
+    });
+
+    /// <summary>Clock icon for the reset-time action.</summary>
+    public static byte[] ClockIcon(int size) => SmallIcon(size, (c, k) =>
+    {
+        using var ring = new SKPaint { Color = ClaudeColor, Style = SKPaintStyle.Stroke, StrokeWidth = 5 * k, IsAntialias = true };
+        c.DrawCircle(36 * k, 36 * k, 20 * k, ring);
+        using var hand = new SKPaint { Color = CodexColor, StrokeWidth = 5 * k, IsAntialias = true, StrokeCap = SKStrokeCap.Round };
+        c.DrawLine(36 * k, 36 * k, 36 * k, 23 * k, hand);
+        c.DrawLine(36 * k, 36 * k, 46 * k, 40 * k, hand);
+    });
+
+    private static byte[] SmallIcon(int size, Action<SKCanvas, float> paint)
+    {
+        using var surface = SKSurface.Create(new SKImageInfo(size, size));
+        var c = surface.Canvas;
+        c.Clear(SKColors.Transparent);
+        float k = size / 72f;
+        using var bg = new SKPaint { Color = Background, IsAntialias = true };
+        c.DrawRoundRect(new SKRect(0, 0, size, size), 14 * k, 14 * k, bg);
+        paint(c, k);
         return Encode(surface);
     }
 
