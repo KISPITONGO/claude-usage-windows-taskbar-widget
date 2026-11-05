@@ -122,12 +122,12 @@ internal static class CredentialStore
                 root = new JsonObject();
             }
 
-            root["claudeAiOauth"] = new JsonObject
-            {
-                ["accessToken"] = credential.AccessToken,
-                ["refreshToken"] = credential.RefreshToken,
-                ["expiresAt"] = credential.ExpiresAt
-            };
+            // Update only the token fields so Claude Code keeps the rest (scopes, subscription type…).
+            if (root["claudeAiOauth"] is not JsonObject oauth)
+                root["claudeAiOauth"] = oauth = new JsonObject();
+            oauth["accessToken"] = credential.AccessToken;
+            oauth["refreshToken"] = credential.RefreshToken;
+            oauth["expiresAt"] = credential.ExpiresAt;
 
             var options = new JsonSerializerOptions { WriteIndented = true };
             File.WriteAllText(credential.SourcePath, root.ToJsonString(options));
@@ -148,12 +148,12 @@ internal static class CredentialStore
                 ? new JsonObject()
                 : JsonNode.Parse(existingJson) ?? new JsonObject();
 
-            root["claudeAiOauth"] = new JsonObject
-            {
-                ["accessToken"] = credential.AccessToken,
-                ["refreshToken"] = credential.RefreshToken,
-                ["expiresAt"] = credential.ExpiresAt
-            };
+            // Update only the token fields so Claude Code keeps the rest (scopes, subscription type…).
+            if (root["claudeAiOauth"] is not JsonObject oauth)
+                root["claudeAiOauth"] = oauth = new JsonObject();
+            oauth["accessToken"] = credential.AccessToken;
+            oauth["refreshToken"] = credential.RefreshToken;
+            oauth["expiresAt"] = credential.ExpiresAt;
 
             var options = new JsonSerializerOptions { WriteIndented = true };
             var newJson = root.ToJsonString(options);

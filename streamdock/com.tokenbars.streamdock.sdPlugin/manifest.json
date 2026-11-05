@@ -1,6 +1,6 @@
 {
   "Name": "TokenBars",
-  "Version": "1.2.0",
+  "Version": "1.3.0",
   "Author": "TokenBars",
   "Description": "Uso de Claude y Codex (límite de 5 h, semanal y tokens) en tus teclas.",
   "Category": "TokenBars",
